@@ -1,0 +1,30 @@
+export const unicodeConverterZh = {
+  title: 'Unicode中文互转',
+  description: 'Unicode编码与中文字符的互相转换',
+  text_to_unicode: '文本转Unicode',
+  unicode_to_text: 'Unicode转文本',
+  text_to_unicode_description: '将文本转换为Unicode编码格式',
+  unicode_to_text_description: '将Unicode编码转换为可读文本',
+  load_example: '加载示例',
+  clear: '清空',
+  original_text: '原始文本',
+  unicode_encoding: 'Unicode编码',
+  converted_text: '转换后文本',
+  swap_input_output: '交换输入和输出',
+  copy: '复制',
+  copied: '已复制',
+  text_to_unicode_placeholder: '输入需要转换为Unicode的文本...',
+  unicode_to_text_placeholder: '输入需要转换为文本的Unicode编码...',
+  unicode_result_placeholder: 'Unicode编码结果将显示在这里...',
+  text_result_placeholder: '文本转换结果将显示在这里...',
+  conversion_error: '转换失败: ',
+  copy_failed: '复制失败',
+  feature_intro: '功能介绍',
+  unicode_description: 'Unicode是一种字符编码标准，可以表示世界上所有字符。在JavaScript和很多编程语言中，Unicode字符可以用\\uXXXX的形式表示，其中XXXX是字符的十六进制码点。',
+  supported_operations: '本工具支持两种转换操作：',
+  operation_text_to_unicode: '文本转Unicode: 将非ASCII字符（如中文、日文等）转换为\\uXXXX格式',
+  operation_unicode_to_text: 'Unicode转文本: 将\\uXXXX格式的编码转换回可读文本',
+  note: '注意：此工具只会转换非ASCII字符（Unicode码点大于127的字符），ASCII字符保持不变。'
+};
+
+export default unicodeConverterZh; 

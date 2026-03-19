@@ -1,0 +1,30 @@
+export const unicodeConverterEn = {
+  title: 'Unicode Converter',
+  description: 'Convert between Unicode and characters',
+  text_to_unicode: 'Text to Unicode',
+  unicode_to_text: 'Unicode to Text',
+  text_to_unicode_description: 'Convert text to Unicode encoding format',
+  unicode_to_text_description: 'Convert Unicode encoding to readable text',
+  load_example: 'Load Example',
+  clear: 'Clear',
+  original_text: 'Original Text',
+  unicode_encoding: 'Unicode Encoding',
+  converted_text: 'Converted Text',
+  swap_input_output: 'Swap Input and Output',
+  copy: 'Copy',
+  copied: 'Copied',
+  text_to_unicode_placeholder: 'Enter text to convert to Unicode...',
+  unicode_to_text_placeholder: 'Enter Unicode encoding to convert to text...',
+  unicode_result_placeholder: 'Unicode encoding result will be displayed here...',
+  text_result_placeholder: 'Text conversion result will be displayed here...',
+  conversion_error: 'Conversion failed: ',
+  copy_failed: 'Copy failed',
+  feature_intro: 'Feature Introduction',
+  unicode_description: 'Unicode is a character encoding standard that can represent all characters in the world. In JavaScript and many programming languages, Unicode characters can be represented in the form of \\uXXXX, where XXXX is the hexadecimal code point of the character.',
+  supported_operations: 'This tool supports two conversion operations:',
+  operation_text_to_unicode: 'Text to Unicode: Convert non-ASCII characters (such as Chinese, Japanese, etc.) to \\uXXXX format',
+  operation_unicode_to_text: 'Unicode to Text: Convert \\uXXXX format encoding back to readable text',
+  note: 'Note: This tool only converts non-ASCII characters (characters with Unicode code points greater than 127), while ASCII characters remain unchanged.'
+};
+
+export default unicodeConverterEn; 

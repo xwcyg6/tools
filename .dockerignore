@@ -1,0 +1,27 @@
+# 开发环境文件
+.git
+.github
+.next
+.vscode
+node_modules
+
+# 构建输出
+out
+
+# 日志文件
+*.log
+
+# 本地文件
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Dockerfile 和相关文件
+Dockerfile
+.dockerignore
+
+# 其他非必要文件
+README.md
+.gitignore
+*.md 

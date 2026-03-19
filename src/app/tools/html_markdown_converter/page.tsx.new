@@ -1,0 +1,387 @@
+'use client';
+
+import React, { useState, useEffect } from 'react';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { 
+  faFileCode, 
+  faCopy, 
+  faCheck, 
+  faRedo, 
+  faExchangeAlt,
+  faInfoCircle
+} from '@fortawesome/free-solid-svg-icons';
+import ToolHeader from '@/components/ToolHeader';
+
+// 添加全局接口，使marked和turndown可以在window上使用
+declare global {
+  interface Window {
+    marked: {
+      parse: (markdown: string, options?: Record<string, unknown>) => string;
+      [key: string]: unknown;
+    };
+    TurndownService: {
+      new (options?: Record<string, unknown>): {
+        turndown: (html: string) => string;
+        [key: string]: unknown;
+      };
+    };
+  }
+}
+
+export default function HtmlMarkdownConverter() {
+  // 输入与输出
+  const [input, setInput] = useState('');
+  const [output, setOutput] = useState('');
+  const [mode, setMode] = useState<'html2md' | 'md2html'>('md2html');
+  
+  // 其他状态
+  const [error, setError] = useState<string | null>(null);
+  const [copied, setCopied] = useState(false);
+  const [isConverting, setIsConverting] = useState(false);
+  const [loadingModules, setLoadingModules] = useState(false);
+  const [modulesLoaded, setModulesLoaded] = useState(false);
+
+  // 动态加载marked和turndown库
+  useEffect(() => {
+    if (typeof window !== 'undefined' && !modulesLoaded) {
+      setLoadingModules(true);
+      
+      const loadScripts = async () => {
+        try {
+          // 加载Marked库
+          const markedScript = document.createElement('script');
+          markedScript.src = '/lib/markdown/marked.min.js';
+          markedScript.async = true;
+          
+          const markedPromise = new Promise<void>((resolve, reject) => {
+            markedScript.onload = () => {
+              console.log('Marked库加载成功');
+              resolve();
+            };
+            markedScript.onerror = (error) => {
+              console.error('加载本地Marked库失败，尝试从CDN加载:', error);
+              // 从CDN加载失败时的备用方案
+              const cdnMarkedScript = document.createElement('script');
+              cdnMarkedScript.src = 'https://cdn.jsdelivr.net/npm/marked/marked.min.js';
+              cdnMarkedScript.async = true;
+              
+              cdnMarkedScript.onload = () => {
+                console.log('从CDN加载Marked库成功');
+                resolve();
+              };
+              
+              cdnMarkedScript.onerror = (cdnError) => {
+                console.error('从CDN加载Marked库失败:', cdnError);
+                reject(new Error('加载Marked库失败'));
+              };
+              
+              document.body.appendChild(cdnMarkedScript);
+            };
+          });
+          
+          document.body.appendChild(markedScript);
+          
+          // 加载Turndown库
+          const turndownScript = document.createElement('script');
+          turndownScript.src = '/lib/markdown/turndown.js';
+          turndownScript.async = true;
+          
+          const turndownPromise = new Promise<void>((resolve, reject) => {
+            turndownScript.onload = () => {
+              console.log('Turndown库加载成功');
+              resolve();
+            };
+            turndownScript.onerror = (error) => {
+              console.error('加载本地Turndown库失败，尝试从CDN加载:', error);
+              // 从CDN加载失败时的备用方案
+              const cdnTurndownScript = document.createElement('script');
+              cdnTurndownScript.src = 'https://cdn.jsdelivr.net/npm/turndown/dist/turndown.js';
+              cdnTurndownScript.async = true;
+              
+              cdnTurndownScript.onload = () => {
+                console.log('从CDN加载Turndown库成功');
+                resolve();
+              };
+              
+              cdnTurndownScript.onerror = (cdnError) => {
+                console.error('从CDN加载Turndown库失败:', cdnError);
+                reject(new Error('加载Turndown库失败'));
+              };
+              
+              document.body.appendChild(cdnTurndownScript);
+            };
+          });
+          
+          document.body.appendChild(turndownScript);
+          
+          // 等待两个脚本都加载完成
+          await Promise.all([markedPromise, turndownPromise]);
+          console.log('所有模块加载完成!');
+          setModulesLoaded(true);
+          setLoadingModules(false);
+        } catch (error) {
+          console.error('加载库失败:', error);
+          setError('加载转换库失败，请刷新页面重试');
+          setLoadingModules(false);
+        }
+      };
+      
+      loadScripts();
+    }
+    
+    return () => {
+      // 清理函数不需要移除脚本，因为它们会一直被缓存和重用
+    };
+  }, [modulesLoaded]);
+
+  // 转换函数
+  const convertContent = () => {
+    if (!input.trim()) {
+      setError('请输入需要转换的内容');
+      setOutput('');
+      return;
+    }
+
+    setIsConverting(true);
+    setError(null);
+
+    try {
+      if (mode === 'md2html') {
+        // Markdown 转 HTML
+        const html = window.marked.parse(input);
+        setOutput(html);
+      } else {
+        // HTML 转 Markdown
+        const turndownService = new window.TurndownService({
+          headingStyle: 'atx',
+          codeBlockStyle: 'fenced'
+        });
+        const markdown = turndownService.turndown(input);
+        setOutput(markdown);
+      }
+      setError(null);
+    } catch (err) {
+      console.error('转换错误:', err);
+      setError(`转换失败: ${err instanceof Error ? err.message : '未知错误'}`);
+      setOutput('');
+    } finally {
+      setIsConverting(false);
+    }
+  };
+
+  // 复制结果
+  const copyResult = () => {
+    if (!output) return;
+    
+    navigator.clipboard.writeText(output)
+      .then(() => {
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2000);
+      })
+      .catch(err => {
+        console.error('复制失败:', err);
+        setError('复制到剪贴板失败');
+      });
+  };
+
+  // 切换转换模式
+  const toggleMode = () => {
+    // 切换模式时交换输入和输出
+    setMode(prevMode => prevMode === 'md2html' ? 'html2md' : 'md2html');
+    setInput(output);
+    setOutput(input);
+    setError(null);
+  };
+
+  // 清空所有内容
+  const clearAll = () => {
+    setInput('');
+    setOutput('');
+    setError(null);
+  };
+
+  // 加载示例
+  const loadExample = () => {
+    if (mode === 'md2html') {
+      setInput(`# 示例标题
+
+这是一段**粗体**文字和*斜体*文字。
+
+## 子标题
+
+- 列表项1
+- 列表项2
+- 列表项3
+
+[这是一个链接](https://example.com)
+
+\`\`\`javascript
+// 这是一段代码
+function hello() {
+  console.log("Hello, world!");
+}
+\`\`\`
+
+> 这是一段引用文字
+
+---
+
+| 表头1 | 表头2 |
+|-------|-------|
+| 单元格1 | 单元格2 |
+| 单元格3 | 单元格4 |
+`);
+    } else {
+      setInput(`<h1>示例标题</h1>
+<p>这是一段<strong>粗体</strong>文字和<em>斜体</em>文字。</p>
+
+<h2>子标题</h2>
+
+<ul>
+  <li>列表项1</li>
+  <li>列表项2</li>
+  <li>列表项3</li>
+</ul>
+
+<p><a href="https://example.com">这是一个链接</a></p>
+
+<pre><code class="language-javascript">// 这是一段代码
+function hello() {
+  console.log("Hello, world!");
+}
+</code></pre>
+
+<blockquote>
+  <p>这是一段引用文字</p>
+</blockquote>
+
+<hr>
+
+<table>
+  <thead>
+    <tr>
+      <th>表头1</th>
+      <th>表头2</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>单元格1</td>
+      <td>单元格2</td>
+    </tr>
+    <tr>
+      <td>单元格3</td>
+      <td>单元格4</td>
+    </tr>
+  </tbody>
+</table>
+`);
+    }
+  };
+
+  return (
+    <div className="container mx-auto px-4 py-8 max-w-6xl">
+      <ToolHeader 
+        title="HTML与Markdown互转" 
+        description="HTML和Markdown文档格式转换"
+        icon={faFileCode}
+      />
+      
+      <div className="mb-6 flex flex-wrap gap-4">
+        <button
+          className={`btn-primary px-4 py-2 flex items-center gap-2 ${isConverting || loadingModules ? 'opacity-50 cursor-not-allowed' : ''}`}
+          onClick={convertContent}
+          disabled={isConverting || loadingModules || !input.trim()}
+        >
+          <FontAwesomeIcon icon={faFileCode} />
+          转换
+        </button>
+        
+        <button
+          className="btn-secondary px-4 py-2 flex items-center gap-2"
+          onClick={toggleMode}
+        >
+          <FontAwesomeIcon icon={faExchangeAlt} />
+          切换: {mode === 'md2html' ? 'Markdown → HTML' : 'HTML → Markdown'}
+        </button>
+        
+        <button
+          className={`btn-secondary px-4 py-2 flex items-center gap-2 ${!output ? 'opacity-50 cursor-not-allowed' : ''}`}
+          onClick={copyResult}
+          disabled={!output}
+        >
+          <FontAwesomeIcon icon={copied ? faCheck : faCopy} />
+          {copied ? '已复制' : '复制'}
+        </button>
+
+        <button
+          className="btn-secondary px-4 py-2 flex items-center gap-2"
+          onClick={clearAll}
+        >
+          <FontAwesomeIcon icon={faRedo} />
+          清空
+        </button>
+
+        <button
+          className="btn-secondary px-4 py-2 flex items-center gap-2"
+          onClick={loadExample}
+        >
+          <FontAwesomeIcon icon={faInfoCircle} />
+          示例
+        </button>
+      </div>
+
+      {error && (
+        <div className="bg-red-900 bg-opacity-30 border border-red-700 text-red-100 px-4 py-2 rounded mb-4">
+          <FontAwesomeIcon icon={faInfoCircle} className="mr-2" />
+          {error}
+        </div>
+      )}
+
+      {loadingModules && (
+        <div className="bg-blue-900 bg-opacity-30 border border-blue-700 text-blue-100 px-4 py-2 rounded mb-4">
+          <FontAwesomeIcon icon={faInfoCircle} className="mr-2" />
+          正在加载转换库，请稍候...
+        </div>
+      )}
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <div className="space-y-2">
+          <h2 className="text-lg font-medium text-[#F1F5F9]">
+            {mode === 'md2html' ? 'Markdown' : 'HTML'}
+          </h2>
+          <textarea
+            className="w-full h-96 p-4 bg-[#1E293B] text-[#F1F5F9] rounded-lg border border-[rgba(99,102,241,0.15)] focus:border-[#6366F1] focus:ring-1 focus:ring-[#6366F1] outline-none font-mono"
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
+            placeholder={mode === 'md2html' ? '请输入Markdown内容...' : '请输入HTML内容...'}
+            spellCheck={false}
+          />
+        </div>
+        
+        <div className="space-y-2">
+          <h2 className="text-lg font-medium text-[#F1F5F9]">
+            {mode === 'md2html' ? 'HTML' : 'Markdown'}
+          </h2>
+          <textarea
+            className="w-full h-96 p-4 bg-[#1E293B] text-[#F1F5F9] rounded-lg border border-[rgba(99,102,241,0.15)] outline-none font-mono"
+            value={output}
+            readOnly
+            placeholder="转换结果将显示在这里..."
+            spellCheck={false}
+          />
+        </div>
+      </div>
+      
+      {mode === 'md2html' && output && (
+        <div className="mt-6">
+          <h2 className="text-lg font-medium text-[#F1F5F9] mb-2">预览</h2>
+          <div 
+            className="p-4 bg-[#1E293B] rounded-lg border border-[rgba(99,102,241,0.15)] prose prose-invert max-w-none"
+            dangerouslySetInnerHTML={{ __html: output }}
+          />
+        </div>
+      )}
+    </div>
+  );
+}
